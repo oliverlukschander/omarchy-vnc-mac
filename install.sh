@@ -131,8 +131,11 @@ echo
 echo "Ready. From a Mac VNC client, left Cmd is Super:"
 echo "  Cmd+Space    menu"
 echo "  Cmd+Return   terminal"
-echo "  Cmd+1..0     workspaces"
-echo "  Cmd+W        close window"
+echo "  Cmd+1..0        workspaces"
+echo "  Cmd+Shift+1..0  move window to workspace"
+echo "  Cmd+W           close window"
 echo
 echo "If Cmd+Space still opens Spotlight, disable that shortcut on the Mac:"
 echo "  System Settings → Keyboard → Keyboard Shortcuts → Spotlight"
+echo
+echo "Keymap changes need a WayVNC restart; reconnect the Mac VNC client."

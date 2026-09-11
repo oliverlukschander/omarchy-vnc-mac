@@ -7,6 +7,12 @@
 // Meta makes Cmd land as Super+Alt together, so Cmd+1 / Cmd+W / Cmd+Space
 // match neither bind. Leave Cmd as Alt_L; wrap-bind clones Super onto Alt.
 //
+// Screen Sharing also sends the unshifted keysym (XK_1, XK_w) while Shift
+// is held. WayVNC then clears every modifier to reach level 0, so
+// Cmd+Shift+1 arrives as a bare 1. Put the unshifted keysym on the shift
+// level as a second keysym (first keysym is still what typing produces)
+// so the lookup matches without stripping Cmd/Shift.
+//
 // Comments must be C-style // (not Lua --). A leading "-" is a syntax error
 // and wayvnc then crashes on client disconnect after a failed keyboard init.
 
@@ -27,4 +33,53 @@ xkb_symbols "basic" {
     };
 
     modifier_map Mod1 { <LWIN> };
+
+    replace key <AE01> { type[Group1] = "TWO_LEVEL", [ 1, { exclam, 1 } ] };
+    replace key <AE02> { type[Group1] = "TWO_LEVEL", [ 2, { at, 2 } ] };
+    replace key <AE03> { type[Group1] = "TWO_LEVEL", [ 3, { numbersign, 3 } ] };
+    replace key <AE04> { type[Group1] = "TWO_LEVEL", [ 4, { dollar, 4 } ] };
+    replace key <AE05> { type[Group1] = "TWO_LEVEL", [ 5, { percent, 5 } ] };
+    replace key <AE06> { type[Group1] = "TWO_LEVEL", [ 6, { asciicircum, 6 } ] };
+    replace key <AE07> { type[Group1] = "TWO_LEVEL", [ 7, { ampersand, 7 } ] };
+    replace key <AE08> { type[Group1] = "TWO_LEVEL", [ 8, { asterisk, 8 } ] };
+    replace key <AE09> { type[Group1] = "TWO_LEVEL", [ 9, { parenleft, 9 } ] };
+    replace key <AE10> { type[Group1] = "TWO_LEVEL", [ 0, { parenright, 0 } ] };
+    replace key <AE11> { type[Group1] = "TWO_LEVEL", [ minus, { underscore, minus } ] };
+    replace key <AE12> { type[Group1] = "TWO_LEVEL", [ equal, { plus, equal } ] };
+
+    replace key <AD01> { type[Group1] = "TWO_LEVEL", [ q, { Q, q } ] };
+    replace key <AD02> { type[Group1] = "TWO_LEVEL", [ w, { W, w } ] };
+    replace key <AD03> { type[Group1] = "TWO_LEVEL", [ e, { E, e } ] };
+    replace key <AD04> { type[Group1] = "TWO_LEVEL", [ r, { R, r } ] };
+    replace key <AD05> { type[Group1] = "TWO_LEVEL", [ t, { T, t } ] };
+    replace key <AD06> { type[Group1] = "TWO_LEVEL", [ y, { Y, y } ] };
+    replace key <AD07> { type[Group1] = "TWO_LEVEL", [ u, { U, u } ] };
+    replace key <AD08> { type[Group1] = "TWO_LEVEL", [ i, { I, i } ] };
+    replace key <AD09> { type[Group1] = "TWO_LEVEL", [ o, { O, o } ] };
+    replace key <AD10> { type[Group1] = "TWO_LEVEL", [ p, { P, p } ] };
+    replace key <AD11> { type[Group1] = "TWO_LEVEL", [ bracketleft, { braceleft, bracketleft } ] };
+    replace key <AD12> { type[Group1] = "TWO_LEVEL", [ bracketright, { braceright, bracketright } ] };
+
+    replace key <AC01> { type[Group1] = "TWO_LEVEL", [ a, { A, a } ] };
+    replace key <AC02> { type[Group1] = "TWO_LEVEL", [ s, { S, s } ] };
+    replace key <AC03> { type[Group1] = "TWO_LEVEL", [ d, { D, d } ] };
+    replace key <AC04> { type[Group1] = "TWO_LEVEL", [ f, { F, f } ] };
+    replace key <AC05> { type[Group1] = "TWO_LEVEL", [ g, { G, g } ] };
+    replace key <AC06> { type[Group1] = "TWO_LEVEL", [ h, { H, h } ] };
+    replace key <AC07> { type[Group1] = "TWO_LEVEL", [ j, { J, j } ] };
+    replace key <AC08> { type[Group1] = "TWO_LEVEL", [ k, { K, k } ] };
+    replace key <AC09> { type[Group1] = "TWO_LEVEL", [ l, { L, l } ] };
+    replace key <AC10> { type[Group1] = "TWO_LEVEL", [ semicolon, { colon, semicolon } ] };
+    replace key <AC11> { type[Group1] = "TWO_LEVEL", [ apostrophe, { quotedbl, apostrophe } ] };
+
+    replace key <AB01> { type[Group1] = "TWO_LEVEL", [ z, { Z, z } ] };
+    replace key <AB02> { type[Group1] = "TWO_LEVEL", [ x, { X, x } ] };
+    replace key <AB03> { type[Group1] = "TWO_LEVEL", [ c, { C, c } ] };
+    replace key <AB04> { type[Group1] = "TWO_LEVEL", [ v, { V, v } ] };
+    replace key <AB05> { type[Group1] = "TWO_LEVEL", [ b, { B, b } ] };
+    replace key <AB06> { type[Group1] = "TWO_LEVEL", [ n, { N, n } ] };
+    replace key <AB07> { type[Group1] = "TWO_LEVEL", [ m, { M, m } ] };
+    replace key <AB08> { type[Group1] = "TWO_LEVEL", [ comma, { less, comma } ] };
+    replace key <AB09> { type[Group1] = "TWO_LEVEL", [ period, { greater, period } ] };
+    replace key <AB10> { type[Group1] = "TWO_LEVEL", [ slash, { question, slash } ] };
 };

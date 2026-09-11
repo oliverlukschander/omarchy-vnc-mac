@@ -29,6 +29,7 @@ Panel {
     { keys: "Cmd+Space", action: "Omarchy menu" },
     { keys: "Cmd+Return", action: "Terminal" },
     { keys: "Cmd+1 … 0", action: "Workspaces" },
+    { keys: "Cmd+Shift+1 … 0", action: "Move window to workspace" },
     { keys: "Cmd+W / F / T", action: "Close / fullscreen / float" },
     { keys: "Cmd+C / V / X", action: "Copy / paste / cut" }
   ]
