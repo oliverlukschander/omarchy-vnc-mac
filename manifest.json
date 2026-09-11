@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "oliverlukschander.vnc-mac",
+  "name": "VNC Mac",
+  "version": "1.0.0",
+  "author": "Oliver Lukschander",
+  "license": "MIT",
+  "description": "macOS Screen Sharing sends Cmd as Alt. Mirror every Super shortcut onto Alt so Cmd works over VNC.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "VNC Mac",
+    "description": "Cmd from a Mac VNC client fires the same shortcuts as Super.",
+    "category": "Input",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

@@ -1,0 +1,20 @@
+// Screen Sharing from a Mac:
+//   Cmd    -> Alt_L   (emit KEY_LEFTMETA so Hyprland sees SUPER)
+//   Option -> Meta_L  (emit KEY_LEFTALT so Hyprland sees ALT)
+// Laptop Super/Alt are unchanged; this layout is only loaded by WayVNC.
+
+default partial alphanumeric_keys modifier_keys
+xkb_symbols "basic" {
+    include "us(mac)"
+
+    name[Group1] = "English (Macintosh, VNC Cmd)";
+
+    replace key <LALT> {
+        type[Group1] = "ONE_LEVEL",
+        [ Meta_L ]
+    };
+
+    replace key <LWIN> {
+        [ Alt_L, Super_L, Hyper_L ]
+    };
+};

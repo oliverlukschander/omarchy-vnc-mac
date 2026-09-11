@@ -1,0 +1,71 @@
+# VNC Mac
+
+Cmd from a Mac VNC client (Screen Sharing) acts as Super on Omarchy 4.
+
+There is no first-party Omarchy plugin for this. macOS Screen Sharing sends
+**left Cmd as Alt**, not Super. Hyprland only treats the Windows/Super keycode
+as SUPER. This plugin clones every `o.bind` Super shortcut onto Alt so Cmd+Space,
+Cmd+Return, Cmd+1, Cmd+W, and the rest fire over VNC.
+
+- Super shortcuts stay Super on the laptop keyboard
+- Super→Alt clones apply only to the WayVNC keyboard, so local Alt+Tab etc. stay Omarchy's Alt shortcuts
+- Option from Screen Sharing (Meta) is mapped to Alt, so those Alt shortcuts work over VNC too
+- SUPER + ALT chords are not cloned (they would collapse onto Alt-only and collide)
+- WayVNC, if installed, gets a Macintosh keymap: Cmd→Super, Option→Alt
+
+`omarchy plugin add` never runs install hooks, so the mapping is applied by
+`install.sh`.
+
+## Install
+
+```sh
+omarchy plugin add https://github.com/oliverlukschander/omarchy-vnc-mac.git --enable
+~/.config/omarchy/plugins/oliverlukschander.vnc-mac/install.sh
+```
+
+`install.sh` hooks `~/.config/hypr/hyprland.lua` (no sudo) so the clone wraps
+`o.bind` before Omarchy registers shortcuts, writes a Hyprland toggle for
+number-row workspace binds (VNC sends `2` instead of `code:11`), and if WayVNC
+is present installs the VNC keymap.
+
+Click the ⌘ icon in the bar, or *Setup → VNC Mac* in the Omarchy menu, and use
+**Install mapping** if you would rather run that from a floating terminal.
+
+Works next to [Mac Option](https://github.com/oliverlukschander/omarchy-mac-option),
+[Vi Mode](https://github.com/oliverlukschander/omarchy-vi-mode), and
+[Vi Resize](https://github.com/oliverlukschander/omarchy-vi-resize).
+
+## Usage
+
+From a Mac, connect over Tailscale VNC and use Cmd as Super:
+
+| Keys | Result |
+| --- | --- |
+| Cmd+Space | Omarchy menu |
+| Cmd+Return | Terminal |
+| Cmd+1 … 0 | Workspaces |
+| Cmd+W | Close window |
+| Cmd+C / V / X | Copy / paste / cut |
+
+If Cmd+Space still opens Spotlight, disable that shortcut on the Mac:
+**System Settings → Keyboard → Keyboard Shortcuts → Spotlight**. Fullscreen
+Screen Sharing does not steal Super, but it does not disable Spotlight either.
+
+## Remove
+
+```sh
+~/.config/omarchy/plugins/oliverlukschander.vnc-mac/uninstall.sh
+omarchy plugin remove oliverlukschander.vnc-mac
+```
+
+Run the uninstaller first. Removing the plugin folder also deletes the
+uninstaller.
+
+## License and dependencies
+
+MIT. See [LICENSE](LICENSE).
+
+Optional: [wayvnc](https://github.com/any1/wayvnc) for the VNC keymap. The Super
+→ Alt bind clone works without it.
+
+Requires **Omarchy 4** (Quattro shell).
