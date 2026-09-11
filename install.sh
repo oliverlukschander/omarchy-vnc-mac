@@ -71,16 +71,30 @@ mkdir -p "$(dirname "$XKB_DST")"
 install -m 644 "$XKB_SRC" "$XKB_DST"
 echo "Wrote $XKB_DST"
 
+macvnc_ok=false
+if command -v xkbcli >/dev/null; then
+  if xkbcli compile-keymap --layout macvnc --model pc104 >/dev/null; then
+    macvnc_ok=true
+  else
+    echo "macvnc keymap failed to compile; WayVNC will keep xkb_layout=us" >&2
+    echo "A bad keymap makes wayvnc abort when a client disconnects." >&2
+  fi
+else
+  echo "xkbcli not found; not pointing WayVNC at macvnc" >&2
+fi
+
 if [[ -f $WAYVNC_CFG ]]; then
-  python3 - "$WAYVNC_CFG" <<'PY'
+  python3 - "$WAYVNC_CFG" "$macvnc_ok" <<'PY'
 from pathlib import Path
 import sys
 p = Path(sys.argv[1])
+use_macvnc = sys.argv[2] == "true"
+layout = "macvnc" if use_macvnc else "us"
 lines = p.read_text().splitlines()
-out, seen_layout, seen_model, seen_variant, seen_options = [], False, False, False, False
+out, seen_layout, seen_model = [], False, False
 for line in lines:
     if line.startswith("xkb_layout="):
-        out.append("xkb_layout=macvnc")
+        out.append(f"xkb_layout={layout}")
         seen_layout = True
     elif line.startswith("xkb_model="):
         out.append("xkb_model=pc104")
@@ -92,11 +106,11 @@ for line in lines:
     else:
         out.append(line)
 if not seen_layout:
-    out.append("xkb_layout=macvnc")
+    out.append(f"xkb_layout={layout}")
 if not seen_model:
     out.append("xkb_model=pc104")
 p.write_text("\n".join(out) + "\n")
-print(f"Updated {p}")
+print(f"Updated {p} (xkb_layout={layout})")
 PY
   systemctl --user restart wayvnc.service >/dev/null 2>&1 || true
 fi

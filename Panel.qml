@@ -59,8 +59,8 @@ Panel {
   }
 
   function close() {
-    setCenterHoverRevealSuppressed(false)
     root.controller.hide()
+    setCenterHoverRevealSuppressed(false)
   }
 
   function toggle() {
@@ -75,8 +75,15 @@ Panel {
   }
 
   function setCenterHoverRevealSuppressed(value) {
-    if (root.bar && "centerHoverRevealSuppressed" in root.bar)
-      root.bar.centerHoverRevealSuppressed = value
+    var bar = root.bar
+    if (!bar) return
+    if (typeof bar.setCenterHoverRevealSuppressed === "function") {
+      bar.setCenterHoverRevealSuppressed(value)
+      return
+    }
+    try {
+      bar.centerHoverRevealSuppressed = value
+    } catch (e) {}
   }
 
   function refresh() {

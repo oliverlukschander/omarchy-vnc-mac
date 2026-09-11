@@ -1,6 +1,8 @@
--- macOS Screen Sharing: left Cmd arrives as Alt_L.
--- Clone Super shortcuts onto Alt *only* for the WayVNC virtual keyboard so
--- the laptop's real Alt (Alt+Tab, etc.) stays intact.
+-- macOS Screen Sharing: left Cmd arrives as Alt_L and must stay Alt_L in
+-- the WayVNC keymap (a Super/Meta remap makes Cmd look like Super+Alt and
+-- matches neither bind). Clone Super shortcuts onto Alt *only* for the
+-- WayVNC virtual keyboard so the laptop's real Alt (Alt+Tab, etc.) stays
+-- intact.
 --
 -- Skip Super+Alt chords: they would collapse onto Alt-only and collide.
 

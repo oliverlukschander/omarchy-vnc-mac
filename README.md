@@ -11,7 +11,7 @@ Cmd+Return, Cmd+1, Cmd+W, and the rest fire over VNC.
 - Super→Alt clones apply only to the WayVNC keyboard, so local Alt+Tab etc. stay Omarchy's Alt shortcuts
 - Option from Screen Sharing (Meta) is mapped to Alt, so those Alt shortcuts work over VNC too
 - SUPER + ALT chords are not cloned (they would collapse onto Alt-only and collide)
-- WayVNC, if installed, gets a Macintosh keymap: Cmd→Super, Option→Alt
+- WayVNC, if installed, gets a keymap that keeps Cmd as Alt_L (the Super→Alt clones are what make Cmd fire Super shortcuts) and maps Option/Meta to Alt. That file must use `//` comments; Lua `--` comments fail to compile and wayvnc then aborts on disconnect.
 
 `omarchy plugin add` never runs install hooks, so the mapping is applied by
 `install.sh`.

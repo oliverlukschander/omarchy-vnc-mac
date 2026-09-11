@@ -1,20 +1,30 @@
-// Screen Sharing from a Mac:
-//   Cmd    -> Alt_L   (emit KEY_LEFTMETA so Hyprland sees SUPER)
-//   Option -> Meta_L  (emit KEY_LEFTALT so Hyprland sees ALT)
-// Laptop Super/Alt are unchanged; this layout is only loaded by WayVNC.
+// Screen Sharing from a Mac sends:
+//   Cmd    -> Alt_L
+//   Option -> Meta_L
+//
+// WayVNC looks up those keysyms in THIS map to pick a Linux keycode, then
+// Hyprland uses the same map the other way. Remapping <LALT> to Super or
+// Meta makes Cmd land as Super+Alt together, so Cmd+1 / Cmd+W / Cmd+Space
+// match neither bind. Leave Cmd as Alt_L; wrap-bind clones Super onto Alt.
+//
+// Comments must be C-style // (not Lua --). A leading "-" is a syntax error
+// and wayvnc then crashes on client disconnect after a failed keyboard init.
 
 default partial alphanumeric_keys modifier_keys
 xkb_symbols "basic" {
-    include "us(mac)"
+    include "us"
 
-    name[Group1] = "English (Macintosh, VNC Cmd)";
+    name[Group1] = "English (VNC Mac)";
 
     replace key <LALT> {
+        type[Group1] = "ONE_LEVEL",
+        [ Alt_L ]
+    };
+
+    replace key <LWIN> {
         type[Group1] = "ONE_LEVEL",
         [ Meta_L ]
     };
 
-    replace key <LWIN> {
-        [ Alt_L, Super_L, Hyper_L ]
-    };
+    modifier_map Mod1 { <LWIN> };
 };
