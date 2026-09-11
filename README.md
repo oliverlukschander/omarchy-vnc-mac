@@ -9,8 +9,8 @@ Cmd+Return, Cmd+1, Cmd+W, and the rest fire over VNC.
 
 - Super shortcuts stay Super on the laptop keyboard
 - Cmd+Shift+1…0 moves the window. Screen Sharing sends unshifted keysyms
-  while Shift is held; the WayVNC keymap keeps Cmd+Shift instead of
-  stripping both modifiers. Reconnect after install so WayVNC loads it.
+  while Shift is held; spare keys in the WayVNC keymap keep Cmd+Shift
+  without breaking Shift+/ (`?`). Reconnect after install so WayVNC loads it.
 - Super→Alt clones apply only to the WayVNC keyboard, so local Alt+Tab etc. stay Omarchy's Alt shortcuts
 - Option from Screen Sharing (Meta) is mapped to Alt, so those Alt shortcuts work over VNC too
 - SUPER + ALT chords are not cloned (they would collapse onto Alt-only and collide)
@@ -29,7 +29,7 @@ omarchy plugin add https://github.com/oliverlukschander/omarchy-vnc-mac.git --en
 `install.sh` hooks `~/.config/hypr/hyprland.lua` (no sudo) so the clone wraps
 `o.bind` before Omarchy registers shortcuts, writes a Hyprland toggle for
 number-row workspace binds (VNC sends `2` instead of `code:11`, and Shift+1
-as `exclam` rather than `1`), and if WayVNC is present installs the VNC keymap.
+as `1` while Shift is held), and if WayVNC is present installs the VNC keymap.
 
 Click the ⌘ icon in the bar, or *Setup → VNC Mac* in the Omarchy menu, and use
 **Install mapping** if you would rather run that from a floating terminal.
