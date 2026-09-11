@@ -30,6 +30,7 @@ Panel {
     { keys: "Cmd+Return", action: "Terminal" },
     { keys: "Cmd+1 … 0", action: "Workspaces" },
     { keys: "Cmd+Shift+1 … 0", action: "Move window to workspace" },
+    { keys: "Cmd+Shift+F / B", action: "File manager / browser" },
     { keys: "Cmd+W / F / T", action: "Close / fullscreen / float" },
     { keys: "Cmd+C / V / X", action: "Copy / paste / cut" }
   ]

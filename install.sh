@@ -133,6 +133,7 @@ echo "  Cmd+Space    menu"
 echo "  Cmd+Return   terminal"
 echo "  Cmd+1..0        workspaces"
 echo "  Cmd+Shift+1..0  move window to workspace"
+echo "  Cmd+Shift+F     file manager"
 echo "  Cmd+W           close window"
 echo
 echo "If Cmd+Space still opens Spotlight, disable that shortcut on the Mac:"

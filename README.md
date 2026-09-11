@@ -8,13 +8,11 @@ as SUPER. This plugin clones every `o.bind` Super shortcut onto Alt so Cmd+Space
 Cmd+Return, Cmd+1, Cmd+W, and the rest fire over VNC.
 
 - Super shortcuts stay Super on the laptop keyboard
-- Cmd+Shift+1…0 moves the window. Screen Sharing sends unshifted keysyms
-  while Shift is held; spare keys in the WayVNC keymap keep Cmd+Shift
-  without breaking Shift+/ (`?`). Reconnect after install so WayVNC loads it.
 - Super→Alt clones apply only to the WayVNC keyboard, so local Alt+Tab etc. stay Omarchy's Alt shortcuts
 - Option from Screen Sharing (Meta) is mapped to Alt, so those Alt shortcuts work over VNC too
+- Cmd+Shift matches Super+Shift (move window, file manager, browser, …). Screen Sharing sends unshifted keysyms while Shift is held; spare keys keep Cmd+Shift without changing what Shift+/ types (`?`)
 - SUPER + ALT chords are not cloned (they would collapse onto Alt-only and collide)
-- WayVNC, if installed, gets a keymap that keeps Cmd as Alt_L (the Super→Alt clones are what make Cmd fire Super shortcuts) and maps Option/Meta to Alt. That file must use `//` comments; Lua `--` comments fail to compile and wayvnc then aborts on disconnect.
+- WayVNC, if installed, gets a keymap that keeps Cmd as Alt_L (the Super→Alt clones are what make Cmd fire Super shortcuts) and maps Option/Meta to Alt. That file must use `//` comments; Lua `--` comments fail to compile and wayvnc then aborts on disconnect. Reconnect after install so WayVNC loads it.
 
 `omarchy plugin add` never runs install hooks, so the mapping is applied by
 `install.sh`.
@@ -27,9 +25,9 @@ omarchy plugin add https://github.com/oliverlukschander/omarchy-vnc-mac.git --en
 ```
 
 `install.sh` hooks `~/.config/hypr/hyprland.lua` (no sudo) so the clone wraps
-`o.bind` before Omarchy registers shortcuts, writes a Hyprland toggle for
-number-row workspace binds (VNC sends `2` instead of `code:11`, and Shift+1
-as `1` while Shift is held), and if WayVNC is present installs the VNC keymap.
+`o.bind` before Omarchy registers shortcuts (including Super+Shift onto spare
+keycodes), writes a Hyprland toggle for number-row workspace binds (VNC sends
+`2` instead of `code:11`), and if WayVNC is present installs the VNC keymap.
 
 Click the ⌘ icon in the bar, or *Setup → VNC Mac* in the Omarchy menu, and use
 **Install mapping** if you would rather run that from a floating terminal.
@@ -48,6 +46,8 @@ From a Mac, connect over Tailscale VNC and use Cmd as Super:
 | Cmd+Return | Terminal |
 | Cmd+1 … 0 | Workspaces |
 | Cmd+Shift+1 … 0 | Move window to workspace |
+| Cmd+Shift+F / B / Return | File manager / browser |
+| Cmd+Shift+Tab | Previous workspace |
 | Cmd+W | Close window |
 | Cmd+C / V / X | Copy / paste / cut |
 
