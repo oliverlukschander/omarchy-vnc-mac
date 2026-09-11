@@ -133,7 +133,7 @@ Panel {
 
   Process {
     id: statusProc
-    command: [root.pluginDir + "/scripts/status.sh"]
+    command: ["/usr/bin/python3", root.pluginDir + "/scripts/status.py"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.status = Model.parseStatus(text)

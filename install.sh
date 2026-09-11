@@ -1,14 +1,17 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 set -euo pipefail
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON=/usr/bin/python3
+HYPRCTL=/usr/bin/hyprctl
+XKBCLI=/usr/bin/xkbcli
+SYSTEMCTL=/usr/bin/systemctl
 WRAP_SRC="$PLUGIN_DIR/hypr/wrap-bind.lua"
 NUMBER_SRC="$PLUGIN_DIR/hypr/number-row.lua"
 HYPR_LUA="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua"
 BEGIN="-- BEGIN oliverlukschander.vnc-mac"
 END="-- END oliverlukschander.vnc-mac"
-TOGGLE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/toggles/hypr"
-TOGGLE_DST="$TOGGLE_DIR/oliverlukschander-vnc-mac.lua"
+TOGGLE_DST="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/toggles/hypr/oliverlukschander-vnc-mac.lua"
 XKB_SRC="$PLUGIN_DIR/xkb/symbols/macvnc"
 XKB_DST="${XDG_CONFIG_HOME:-$HOME/.config}/xkb/symbols/macvnc"
 WAYVNC_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/wayvnc/config"
@@ -17,63 +20,26 @@ echo "Omarchy VNC Mac"
 echo "Cmd from macOS Screen Sharing fires the same shortcuts as Super."
 echo
 
-if [[ ! -f $WRAP_SRC ]]; then
-  echo "Missing $WRAP_SRC" >&2
+if [[ ! -x $PYTHON ]]; then
+  echo "Missing $PYTHON" >&2
   exit 1
 fi
-if [[ ! -f $NUMBER_SRC ]]; then
-  echo "Missing $NUMBER_SRC" >&2
-  exit 1
-fi
-if [[ ! -f $HYPR_LUA ]]; then
-  echo "Missing $HYPR_LUA" >&2
-  exit 1
-fi
+for f in "$WRAP_SRC" "$NUMBER_SRC" "$XKB_SRC" "$HYPR_LUA"; do
+  if [[ ! -f $f ]]; then
+    echo "Missing $f" >&2
+    exit 1
+  fi
+done
 
-insert_hypr_hook() {
-  python3 - "$HYPR_LUA" "$WRAP_SRC" "$BEGIN" "$END" <<'PY'
-from pathlib import Path
-import sys
-
-hypr = Path(sys.argv[1])
-wrap = Path(sys.argv[2])
-begin = sys.argv[3]
-end = sys.argv[4]
-text = hypr.read_text()
-block = (
-    f"{begin}\n"
-    f'pcall(dofile, "{wrap}")\n'
-    f"{end}\n"
-)
-if begin in text:
-    pre, rest = text.split(begin, 1)
-    _, post = rest.split(end, 1)
-    post = post.lstrip("\n")
-    text = pre + block + post
-else:
-    needle = 'require("default.hypr.omarchy")'
-    idx = text.find(needle)
-    if idx == -1:
-        sys.exit("Could not find require(\"default.hypr.omarchy\") in hyprland.lua")
-    text = text[:idx] + block + "\n" + text[idx:]
-hypr.write_text(text)
-print(f"Wrote hook in {hypr}")
-PY
-}
-
-insert_hypr_hook
-
-mkdir -p "$TOGGLE_DIR"
-install -m 644 "$NUMBER_SRC" "$TOGGLE_DST"
+"$PYTHON" "$PLUGIN_DIR/scripts/hypr_hook.py" install "$HYPR_LUA" "$WRAP_SRC" "$BEGIN" "$END"
+"$PYTHON" "$PLUGIN_DIR/scripts/safe_file.py" copy "$NUMBER_SRC" "$TOGGLE_DST"
 echo "Wrote $TOGGLE_DST"
-
-mkdir -p "$(dirname "$XKB_DST")"
-install -m 644 "$XKB_SRC" "$XKB_DST"
+"$PYTHON" "$PLUGIN_DIR/scripts/safe_file.py" copy "$XKB_SRC" "$XKB_DST"
 echo "Wrote $XKB_DST"
 
 macvnc_ok=false
-if command -v xkbcli >/dev/null; then
-  if xkbcli compile-keymap --layout macvnc --model pc104 >/dev/null; then
+if [[ -x $XKBCLI ]]; then
+  if "$XKBCLI" compile-keymap --layout macvnc --model pc104 >/dev/null; then
     macvnc_ok=true
   else
     echo "macvnc keymap failed to compile; WayVNC will keep xkb_layout=us" >&2
@@ -84,48 +50,27 @@ else
 fi
 
 if [[ -f $WAYVNC_CFG ]]; then
-  python3 - "$WAYVNC_CFG" "$macvnc_ok" <<'PY'
-from pathlib import Path
-import sys
-p = Path(sys.argv[1])
-use_macvnc = sys.argv[2] == "true"
-layout = "macvnc" if use_macvnc else "us"
-lines = p.read_text().splitlines()
-out, seen_layout, seen_model = [], False, False
-for line in lines:
-    if line.startswith("xkb_layout="):
-        out.append(f"xkb_layout={layout}")
-        seen_layout = True
-    elif line.startswith("xkb_model="):
-        out.append("xkb_model=pc104")
-        seen_model = True
-    elif line.startswith("xkb_variant="):
-        continue
-    elif line.startswith("xkb_options="):
-        continue
-    else:
-        out.append(line)
-if not seen_layout:
-    out.append(f"xkb_layout={layout}")
-if not seen_model:
-    out.append("xkb_model=pc104")
-p.write_text("\n".join(out) + "\n")
-print(f"Updated {p} (xkb_layout={layout})")
-PY
-  systemctl --user restart wayvnc.service >/dev/null 2>&1 || true
+  "$PYTHON" "$PLUGIN_DIR/scripts/wayvnc_cfg.py" install "$WAYVNC_CFG" "$macvnc_ok"
+  if [[ -x $SYSTEMCTL ]]; then
+    "$SYSTEMCTL" --user restart wayvnc.service >/dev/null 2>&1 || true
+  fi
 fi
 
-if command -v hyprctl >/dev/null; then
-  hyprctl reload >/dev/null
-  errors=$(hyprctl configerrors 2>/dev/null || true)
+if [[ -x $HYPRCTL ]]; then
+  "$HYPRCTL" reload >/dev/null
+  errors=$("$HYPRCTL" configerrors 2>/dev/null || true)
   if [[ -n ${errors//[[:space:]]/} ]]; then
     echo "Hyprland config errors:" >&2
     echo "$errors" >&2
   fi
 fi
 
-python3 "$PLUGIN_DIR/scripts/menu.py" install
-omarchy menu refresh >/dev/null 2>&1 || true
+"$PYTHON" "$PLUGIN_DIR/scripts/menu.py" install
+if [[ -x /usr/bin/omarchy ]]; then
+  /usr/bin/omarchy menu refresh >/dev/null 2>&1 || true
+else
+  omarchy menu refresh >/dev/null 2>&1 || true
+fi
 
 echo
 echo "Ready. From a Mac VNC client, left Cmd is Super:"

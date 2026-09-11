@@ -1,63 +1,46 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 set -euo pipefail
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON=/usr/bin/python3
+HYPRCTL=/usr/bin/hyprctl
+SYSTEMCTL=/usr/bin/systemctl
 HYPR_LUA="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua"
 BEGIN="-- BEGIN oliverlukschander.vnc-mac"
 END="-- END oliverlukschander.vnc-mac"
 TOGGLE_DST="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/toggles/hypr/oliverlukschander-vnc-mac.lua"
 XKB_DST="${XDG_CONFIG_HOME:-$HOME/.config}/xkb/symbols/macvnc"
+WAYVNC_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/wayvnc/config"
 
 echo "Removing Omarchy VNC Mac mapping"
 
-rm -f "$TOGGLE_DST"
-
-if [[ -f $HYPR_LUA ]] && grep -qF "$BEGIN" "$HYPR_LUA"; then
-  python3 - "$HYPR_LUA" "$BEGIN" "$END" <<'PY'
-from pathlib import Path
-import sys
-p, begin, end = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
-text = p.read_text()
-if begin not in text:
-    raise SystemExit(0)
-pre, rest = text.split(begin, 1)
-_, post = rest.split(end, 1)
-p.write_text(pre + post.lstrip("\n"))
-PY
+if [[ ! -x $PYTHON ]]; then
+  echo "Missing $PYTHON" >&2
+  exit 1
 fi
 
-rm -f "$XKB_DST"
+"$PYTHON" "$PLUGIN_DIR/scripts/safe_file.py" remove "$TOGGLE_DST"
+if [[ -f $HYPR_LUA ]]; then
+  "$PYTHON" "$PLUGIN_DIR/scripts/hypr_hook.py" uninstall "$HYPR_LUA" "$BEGIN" "$END"
+fi
+"$PYTHON" "$PLUGIN_DIR/scripts/safe_file.py" remove "$XKB_DST"
 
-if [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/wayvnc/config ]]; then
-  python3 - "${XDG_CONFIG_HOME:-$HOME/.config}/wayvnc/config" <<'PY'
-from pathlib import Path
-import sys
-p = Path(sys.argv[1])
-lines = p.read_text().splitlines()
-out = []
-for line in lines:
-    if line.startswith("xkb_layout="):
-        out.append("xkb_layout=us")
-    elif line.startswith("xkb_variant="):
-        out.append("xkb_variant=mac")
-    elif line.startswith("xkb_model="):
-        out.append("xkb_model=pc104")
-    elif line.startswith("xkb_options="):
-        continue
-    else:
-        out.append(line)
-if not any(l.startswith("xkb_variant=") for l in out):
-    out.append("xkb_variant=mac")
-p.write_text("\n".join(out) + "\n")
-PY
-  systemctl --user restart wayvnc.service >/dev/null 2>&1 || true
+if [[ -f $WAYVNC_CFG ]]; then
+  "$PYTHON" "$PLUGIN_DIR/scripts/wayvnc_cfg.py" uninstall "$WAYVNC_CFG"
+  if [[ -x $SYSTEMCTL ]]; then
+    "$SYSTEMCTL" --user restart wayvnc.service >/dev/null 2>&1 || true
+  fi
 fi
 
-if command -v hyprctl >/dev/null; then
-  hyprctl reload >/dev/null || true
+if [[ -x $HYPRCTL ]]; then
+  "$HYPRCTL" reload >/dev/null || true
 fi
 
-python3 "$PLUGIN_DIR/scripts/menu.py" uninstall
-omarchy menu refresh >/dev/null 2>&1 || true
+"$PYTHON" "$PLUGIN_DIR/scripts/menu.py" uninstall
+if [[ -x /usr/bin/omarchy ]]; then
+  /usr/bin/omarchy menu refresh >/dev/null 2>&1 || true
+else
+  omarchy menu refresh >/dev/null 2>&1 || true
+fi
 
 echo "VNC Mac mapping removed. Super shortcuts are unchanged; Cmd-as-Alt clones are gone."
