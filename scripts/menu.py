@@ -3,12 +3,16 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from safe_file import atomic_write, die, read_text
 
-MENU = Path.home() / ".config/omarchy/extensions/omarchy-menu.jsonc"
+_CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or (Path.home() / ".config"))
+MENU = _CONFIG / "omarchy" / "extensions" / "omarchy-menu.jsonc"
 MARKER = '"setup.vnc-mac"'
 ROW = (
     '  "setup.vnc-mac": {'

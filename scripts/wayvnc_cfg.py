@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from safe_file import die, read_text, atomic_write
 

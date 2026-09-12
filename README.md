@@ -24,13 +24,15 @@ omarchy plugin add https://github.com/oliverlukschander/omarchy-vnc-mac.git --en
 ~/.config/omarchy/plugins/oliverlukschander.vnc-mac/install.sh
 ```
 
-`install.sh` hooks `~/.config/hypr/hyprland.lua` (no sudo) so the clone wraps
+`install.sh` hooks `~/.config/hypr/hyprland.lua` so the clone wraps
 `o.bind` before Omarchy registers shortcuts (including Super+Shift onto spare
 keycodes), writes a Hyprland toggle for number-row workspace binds (VNC sends
 `2` instead of `code:11`), and if WayVNC is present installs the VNC keymap.
+It does not request elevated privileges.
 
 Click the ⌘ icon in the bar, or *Setup → VNC Mac* in the Omarchy menu, and use
-**Install mapping** if you would rather run that from a floating terminal.
+**Install mapping**. That runs the same installer in-process with a closed
+environment.
 
 Works next to [Mac Option](https://github.com/oliverlukschander/omarchy-mac-option),
 [Vi Mode](https://github.com/oliverlukschander/omarchy-vi-mode), and

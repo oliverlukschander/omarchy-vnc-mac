@@ -73,6 +73,16 @@ def _kill_group(proc: subprocess.Popen) -> None:
             pass
 
 
+def _trusted_exe(path: str) -> bool:
+    if not path or "\x00" in path:
+        return False
+    if not os.path.isabs(path):
+        return False
+    if ".." in path.split("/"):
+        return False
+    return path.startswith("/usr/bin/") or path.startswith("/bin/")
+
+
 def run(
     argv: list[str],
     *,
@@ -80,8 +90,8 @@ def run(
     max_stdout: int,
     max_stderr: int,
 ) -> tuple[int, bytes, bytes]:
-    if not argv or not os.path.isabs(argv[0]):
-        raise SystemExit("refusing relative executable")
+    if not argv or not _trusted_exe(argv[0]):
+        raise SystemExit("refusing untrusted executable")
     if not os.path.isfile(argv[0]) or not os.access(argv[0], os.X_OK):
         return EXIT_MISSING, b"", b""
     try:

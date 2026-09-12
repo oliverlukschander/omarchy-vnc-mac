@@ -3,18 +3,24 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from safe_file import die, read_text, atomic_write
 
 
 def install(hypr: Path, wrap: Path, begin: str, end: str) -> None:
-    wrap_text = read_text(wrap)
+    wrap_s = os.path.abspath(str(wrap))
+    if any(c in wrap_s for c in '"\\\n\r'):
+        die("illegal wrap path")
+    wrap_text = read_text(Path(wrap_s))
     if "function o.bind" not in wrap_text:
-        die(f"wrap file does not look like wrap-bind.lua: {wrap}")
+        die(f"wrap file does not look like wrap-bind.lua: {wrap_s}")
     text = read_text(hypr)
-    block = f"{begin}\npcall(dofile, \"{wrap}\")\n{end}\n"
+    block = f"{begin}\npcall(dofile, \"{wrap_s}\")\n{end}\n"
     if begin in text:
         pre, rest = text.split(begin, 1)
         _, post = rest.split(end, 1)

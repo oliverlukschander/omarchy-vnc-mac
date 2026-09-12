@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "oliverlukschander.vnc-mac",
   "name": "VNC Mac",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "author": "Oliver Lukschander",
   "license": "MIT",
   "description": "macOS Screen Sharing sends Cmd as Alt. Mirror every Super shortcut onto Alt so Cmd works over VNC.",
