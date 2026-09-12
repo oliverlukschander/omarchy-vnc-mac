@@ -14,24 +14,38 @@ from safe_file import atomic_write, die, read_text
 _CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or (Path.home() / ".config"))
 MENU = _CONFIG / "omarchy" / "extensions" / "omarchy-menu.jsonc"
 MARKER = '"setup.vnc-mac"'
-ROW = (
-    '  "setup.vnc-mac": {'
-    '"icon":"⌘",'
-    '"label":"VNC Mac",'
-    '"description":"Cmd from a Mac VNC client acts as Super",'
-    '"action":"omarchy-shell shell summon oliverlukschander.vnc-mac \'{}\'",'
-    '"checked":"grep -qF oliverlukschander.vnc-mac ${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua"'
-    "},\n"
-)
+
+
+def _atom(path: str) -> str:
+    if not os.path.isabs(path) or ".." in path.split("/"):
+        die(f"unsafe plugin path: {path}")
+    for c in path:
+        if not (c.isalnum() or c in "/._-"):
+            die(f"unsafe plugin path: {path}")
+    return path
+
+
+def _row() -> str:
+    host = _atom(os.path.join(os.path.dirname(os.path.abspath(__file__)), "menu_host.py"))
+    return (
+        '  "setup.vnc-mac": {'
+        '"icon":"⌘",'
+        '"label":"VNC Mac",'
+        '"description":"Cmd from a Mac VNC client acts as Super",'
+        f'"action":"/usr/bin/python3 -I {host} action \'{{}}\'",'
+        f'"checked":"/usr/bin/python3 -I {host} checked"'
+        "},\n"
+    )
 
 
 def _with_row(text: str) -> str:
+    row = _row()
     if MARKER in text:
-        return text
+        return "".join(line if MARKER not in line else row for line in text.splitlines(keepends=True))
     idx = text.rfind("}")
     if idx == -1:
-        return "{\n" + ROW + "}\n"
-    return text[:idx] + ROW + text[idx:]
+        return "{\n" + row + "}\n"
+    return text[:idx] + row + text[idx:]
 
 
 def _without_row(text: str) -> str:
