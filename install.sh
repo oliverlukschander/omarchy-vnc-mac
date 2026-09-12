@@ -6,6 +6,7 @@ PYTHON=/usr/bin/python3
 HYPRCTL=/usr/bin/hyprctl
 XKBCLI=/usr/bin/xkbcli
 SYSTEMCTL=/usr/bin/systemctl
+OMARCHY=/usr/bin/omarchy
 WRAP_SRC="$PLUGIN_DIR/hypr/wrap-bind.lua"
 NUMBER_SRC="$PLUGIN_DIR/hypr/number-row.lua"
 HYPR_LUA="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua"
@@ -31,15 +32,25 @@ for f in "$WRAP_SRC" "$NUMBER_SRC" "$XKB_SRC" "$HYPR_LUA"; do
   fi
 done
 
-"$PYTHON" "$PLUGIN_DIR/scripts/hypr_hook.py" install "$HYPR_LUA" "$WRAP_SRC" "$BEGIN" "$END"
-"$PYTHON" "$PLUGIN_DIR/scripts/safe_file.py" copy "$NUMBER_SRC" "$TOGGLE_DST"
+run() {
+  local timeout=$1 max=$2
+  shift 2
+  "$PYTHON" -I "$PLUGIN_DIR/scripts/run.py" --timeout "$timeout" --max-stdout "$max" --max-stderr "$max" -- "$@"
+}
+
+py() {
+  run 15 1048576 "$PYTHON" -I "$@"
+}
+
+py "$PLUGIN_DIR/scripts/hypr_hook.py" install "$HYPR_LUA" "$WRAP_SRC" "$BEGIN" "$END"
+py "$PLUGIN_DIR/scripts/safe_file.py" copy "$NUMBER_SRC" "$TOGGLE_DST"
 echo "Wrote $TOGGLE_DST"
-"$PYTHON" "$PLUGIN_DIR/scripts/safe_file.py" copy "$XKB_SRC" "$XKB_DST"
+py "$PLUGIN_DIR/scripts/safe_file.py" copy "$XKB_SRC" "$XKB_DST"
 echo "Wrote $XKB_DST"
 
 macvnc_ok=false
 if [[ -x $XKBCLI ]]; then
-  if "$XKBCLI" compile-keymap --layout macvnc --model pc104 >/dev/null; then
+  if run 5 262144 "$XKBCLI" compile-keymap --layout macvnc --model pc104 >/dev/null; then
     macvnc_ok=true
   else
     echo "macvnc keymap failed to compile; WayVNC will keep xkb_layout=us" >&2
@@ -50,26 +61,24 @@ else
 fi
 
 if [[ -f $WAYVNC_CFG ]]; then
-  "$PYTHON" "$PLUGIN_DIR/scripts/wayvnc_cfg.py" install "$WAYVNC_CFG" "$macvnc_ok"
+  py "$PLUGIN_DIR/scripts/wayvnc_cfg.py" install "$WAYVNC_CFG" "$macvnc_ok"
   if [[ -x $SYSTEMCTL ]]; then
-    "$SYSTEMCTL" --user restart wayvnc.service >/dev/null 2>&1 || true
+    run 8 65536 "$SYSTEMCTL" --user restart wayvnc.service >/dev/null || true
   fi
 fi
 
 if [[ -x $HYPRCTL ]]; then
-  "$HYPRCTL" reload >/dev/null
-  errors=$("$HYPRCTL" configerrors 2>/dev/null || true)
+  run 5 65536 "$HYPRCTL" reload >/dev/null
+  errors=$(run 5 65536 "$HYPRCTL" configerrors || true)
   if [[ -n ${errors//[[:space:]]/} ]]; then
     echo "Hyprland config errors:" >&2
     echo "$errors" >&2
   fi
 fi
 
-"$PYTHON" "$PLUGIN_DIR/scripts/menu.py" install
-if [[ -x /usr/bin/omarchy ]]; then
-  /usr/bin/omarchy menu refresh >/dev/null 2>&1 || true
-else
-  omarchy menu refresh >/dev/null 2>&1 || true
+py "$PLUGIN_DIR/scripts/menu.py" install
+if [[ -x $OMARCHY ]]; then
+  run 5 65536 "$OMARCHY" menu refresh >/dev/null || true
 fi
 
 echo

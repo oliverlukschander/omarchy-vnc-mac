@@ -133,7 +133,22 @@ Panel {
 
   Process {
     id: statusProc
-    command: ["/usr/bin/python3", root.pluginDir + "/scripts/status.py"]
+    command: ["/usr/bin/python3", "-I", root.pluginDir + "/scripts/status.py"]
+    workingDirectory: "/"
+    clearEnvironment: true
+    environment: ({
+      PATH: "/usr/bin:/bin",
+      LANG: "C.UTF-8",
+      HOME: null,
+      USER: null,
+      LOGNAME: null,
+      XDG_CONFIG_HOME: null,
+      XDG_STATE_HOME: null,
+      XDG_RUNTIME_DIR: null,
+      HYPRLAND_INSTANCE_SIGNATURE: null,
+      WAYLAND_DISPLAY: null,
+      DBUS_SESSION_BUS_ADDRESS: null
+    })
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.status = Model.parseStatus(text)

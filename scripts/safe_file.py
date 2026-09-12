@@ -1,8 +1,14 @@
 #!/usr/bin/python3
-"""Descriptor-relative, no-follow reads/writes for user config files."""
+"""Descriptor-relative, no-follow reads/writes for user config files.
+
+Every destination component is opened from a retained directory descriptor
+with O_NOFOLLOW. Missing parents are created with mkdirat on that descriptor,
+never Path.mkdir on the full pathname.
+"""
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 import sys
@@ -19,41 +25,90 @@ def _owned_by_us(st: os.stat_result) -> bool:
     return st.st_uid == os.getuid()
 
 
-def _parent_dirfd(path: Path, *, create: bool) -> int:
-    parent = path.parent
-    if create:
-        parent.mkdir(parents=True, exist_ok=True)
-    try:
-        dirfd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    except OSError as exc:
-        die(f"refusing parent {parent}: {exc}")
-    st = os.fstat(dirfd)
+def _check_dir(st: os.stat_result, label: str) -> None:
     if not stat.S_ISDIR(st.st_mode):
-        os.close(dirfd)
-        die(f"parent is not a directory: {parent}")
-    if not _owned_by_us(st):
-        os.close(dirfd)
-        die(f"parent not owned by current user: {parent}")
-    return dirfd
+        die(f"not a directory: {label}")
+    if st.st_uid not in (0, os.getuid()):
+        die(f"unowned directory: {label}")
+    if st.st_mode & 0o002:
+        die(f"world-writable directory: {label}")
+
+
+def _abs_parts(path: Path) -> tuple[list[str], str]:
+    raw = str(path)
+    if not os.path.isabs(raw):
+        die(f"path must be absolute: {path}")
+    parts: list[str] = []
+    for part in raw.split("/"):
+        if part == "" or part == ".":
+            continue
+        if part == ".." or "\x00" in part:
+            die(f"illegal path component: {path}")
+        parts.append(part)
+    if not parts:
+        die(f"refusing root path: {path}")
+    return parts[:-1], parts[-1]
+
+
+def _open_walk(parts: list[str], *, create: bool) -> int:
+    fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    try:
+        _check_dir(os.fstat(fd), "/")
+        walked = ""
+        for part in parts:
+            walked += "/" + part
+            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+            try:
+                nxt = os.open(part, flags, dir_fd=fd)
+            except FileNotFoundError:
+                if not create:
+                    raise
+                try:
+                    os.mkdir(part, 0o700, dir_fd=fd)
+                except FileExistsError:
+                    pass
+                nxt = os.open(part, flags, dir_fd=fd)
+            except OSError as exc:
+                if exc.errno in (errno.ELOOP, errno.ENOTDIR):
+                    try:
+                        st = os.stat(part, dir_fd=fd, follow_symlinks=False)
+                    except OSError:
+                        raise exc from None
+                    if stat.S_ISLNK(st.st_mode):
+                        die(f"refusing symlink: {walked}")
+                raise
+            os.close(fd)
+            fd = nxt
+            _check_dir(os.fstat(fd), walked)
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def _parent_dirfd(path: Path, *, create: bool) -> int:
+    parent_parts, _name = _abs_parts(path)
+    try:
+        return _open_walk(parent_parts, create=create)
+    except FileNotFoundError:
+        die(f"missing parent of {path}")
+    except OSError as exc:
+        die(f"refusing parent of {path}: {exc}")
 
 
 def read_text(path: Path, *, missing: str | None = None) -> str:
-    parent = path.parent
+    parent_parts, name = _abs_parts(path)
     try:
-        dirfd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        dirfd = _open_walk(parent_parts, create=False)
     except FileNotFoundError:
         if missing is not None:
             return missing
         die(f"missing {path}")
     except OSError as exc:
-        die(f"refusing parent {parent}: {exc}")
-    st = os.fstat(dirfd)
-    if not stat.S_ISDIR(st.st_mode) or not _owned_by_us(st):
-        os.close(dirfd)
-        die(f"refusing parent {parent}")
+        die(f"refusing parent of {path}: {exc}")
     try:
         try:
-            fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=dirfd)
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=dirfd)
         except FileNotFoundError:
             if missing is not None:
                 return missing
@@ -82,12 +137,13 @@ def atomic_write(path: Path, text: str) -> None:
     data = text.encode()
     if len(data) > MAX_BYTES:
         die(f"refusing to write oversized file: {path}")
+    _parent_parts, name = _abs_parts(path)
     dirfd = _parent_dirfd(path, create=True)
-    tmp = f".{path.name}.{os.getpid()}.tmp"
+    tmp = f".{name}.{os.getpid()}.tmp"
     fd = -1
     try:
         try:
-            existing = os.stat(path.name, dir_fd=dirfd, follow_symlinks=False)
+            existing = os.stat(name, dir_fd=dirfd, follow_symlinks=False)
         except FileNotFoundError:
             existing = None
         if existing is not None:
@@ -95,7 +151,7 @@ def atomic_write(path: Path, text: str) -> None:
                 die(f"refusing non-regular file: {path}")
             if not _owned_by_us(existing):
                 die(f"file not owned by current user: {path}")
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
         fd = os.open(tmp, flags, 0o600, dir_fd=dirfd)
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode) or not _owned_by_us(st):
@@ -106,13 +162,13 @@ def atomic_write(path: Path, text: str) -> None:
         os.fsync(fd)
         os.close(fd)
         fd = -1
-        os.rename(tmp, path.name, src_dir_fd=dirfd, dst_dir_fd=dirfd)
-        landed = os.stat(path.name, dir_fd=dirfd, follow_symlinks=False)
+        os.rename(tmp, name, src_dir_fd=dirfd, dst_dir_fd=dirfd)
+        landed = os.stat(name, dir_fd=dirfd, follow_symlinks=False)
         if stat.S_ISLNK(landed.st_mode) or not stat.S_ISREG(landed.st_mode):
             die(f"rename did not land on a regular file: {path}")
         if not _owned_by_us(landed):
             die(f"renamed file not owned by current user: {path}")
-    except Exception:
+    except BaseException:
         if fd >= 0:
             os.close(fd)
         try:
@@ -131,20 +187,23 @@ def copy_file(src: Path, dst: Path) -> None:
 
 
 def remove_file(path: Path) -> None:
+    parent_parts, name = _abs_parts(path)
     try:
-        dirfd = _parent_dirfd(path, create=False)
-    except SystemExit:
+        dirfd = _open_walk(parent_parts, create=False)
+    except FileNotFoundError:
+        return
+    except OSError:
         return
     try:
         try:
-            st = os.stat(path.name, dir_fd=dirfd, follow_symlinks=False)
+            st = os.stat(name, dir_fd=dirfd, follow_symlinks=False)
         except FileNotFoundError:
             return
         if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
             die(f"refusing non-regular file: {path}")
         if not _owned_by_us(st):
             die(f"file not owned by current user: {path}")
-        os.unlink(path.name, dir_fd=dirfd)
+        os.unlink(name, dir_fd=dirfd)
     finally:
         os.close(dirfd)
 
