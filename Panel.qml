@@ -93,11 +93,12 @@ Panel {
   }
 
   function runScript(name) {
-    var cmd = "omarchy-launch-floating-terminal-with-presentation '" + pluginDir + "/" + name + "'"
-    if (root.bar && typeof root.bar.run === "function")
-      root.bar.run(cmd)
-    else
-      Quickshell.execDetached(["bash", "-lc", cmd])
+    if (name !== "install.sh" && name !== "uninstall.sh")
+      return
+    Quickshell.execDetached([
+      "/usr/bin/omarchy-launch-floating-terminal-with-presentation",
+      root.pluginDir + "/" + name
+    ])
     Qt.callLater(root.refresh)
     delayedRefresh.restart()
   }

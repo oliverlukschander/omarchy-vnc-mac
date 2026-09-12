@@ -30,8 +30,8 @@ def _check_dir(st: os.stat_result, label: str) -> None:
         die(f"not a directory: {label}")
     if st.st_uid not in (0, os.getuid()):
         die(f"unowned directory: {label}")
-    if st.st_mode & 0o002:
-        die(f"world-writable directory: {label}")
+    if st.st_mode & 0o022:
+        die(f"group- or world-writable directory: {label}")
 
 
 def _abs_parts(path: Path) -> tuple[list[str], str]:

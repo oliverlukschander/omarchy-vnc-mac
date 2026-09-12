@@ -1,7 +1,11 @@
 #!/usr/bin/bash
 set -euo pipefail
 
-PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_self=${BASH_SOURCE[0]}
+if [[ $_self != /* ]]; then
+  _self=${PWD%/}/$_self
+fi
+PLUGIN_DIR=${_self%/*}
 PYTHON=/usr/bin/python3
 HYPRCTL=/usr/bin/hyprctl
 SYSTEMCTL=/usr/bin/systemctl
